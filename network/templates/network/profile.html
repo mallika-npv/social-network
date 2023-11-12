@@ -1,0 +1,86 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+    <div class="card" style="margin: 10px;">
+        <div class="card-header">Your Profile</div>
+        <div class="card-body">
+        <h5 class="card-title">{{ c_user }}</h5>
+        <p class="card-text">Followers:{{ follower }}  Following:{{ following }}</p>
+        </div>
+    </div>
+    {% if not isuser %}
+        <div style="margin-left: 10px;">
+            {% if if_following %}
+                <form action="{% url 'uncount' id=c_user.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-secondary">Unfollow</button>
+                </form>
+            {% else %}
+                <form action="{% url 'count' id=c_user.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-secondary">Follow</button>
+                </form>
+            {% endif %}
+            </div>
+    {% endif %}
+    {% for p in posts %}
+    <div class="list-group" style="margin: 5px 50px;">
+        <div class="list-group-item" style="margin: 10px;">
+            <h5>@{{ p.author }}</h5>
+            <h6>{{ p.content }}</h6>
+            <p>{{ p.timestamp }}</p>
+            {% if isuser %}
+                <div><a href="#" class="btn btn-primary" data-toggle="modal" data-target="#edit_modal_{{ p.id }}">Edit</a></div>
+                <div class="modal" id="edit_modal_{{ p.id }}" tabindex="-1" role="dialog" aria-labelledby="edit_modal_{{ p.id }}" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title">Edit Post</h5>
+                          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                          </button>
+                        </div>
+                        <div class="modal-body">
+                          <textarea class="form-control" name="edit_post" id="txtarea_{{ p.id }}" rows="3"></textarea>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-primary" onclick="submitHandler('{{ p.id }}')">Save changes</button>
+                          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    <script>
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if(parts.length==2) return parts.pop().split(';').shift()
+        }
+
+        function submitHandler(id){
+            const newcontent = document.getElementById(`txtarea_${id}`).value;
+            fetch(`/edit/${id}`,{
+                method: "POST",
+                headers:{"Content-type": "applications/json", "X-CSRFToken": getCookie("csrftoken")},
+                body: JSON.stringify({
+                    content: newcontent
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                content.innerHTML = result.data;
+                modal.classList.remove('show');
+                modal.setAttribute('aria-hidden', 'true');
+                modal.setAttribute('style', 'display: none');
+                const modalsBackdrops = document.getElementsByClassName('modal-backdrop');
+                for (let i=0; i<modalsBackdrops.length; i++){ 
+                    document.body.removeChild (modalsBackdrops[i]);
+                }
+            })
+        }
+    </script>
+{% endblock %}
